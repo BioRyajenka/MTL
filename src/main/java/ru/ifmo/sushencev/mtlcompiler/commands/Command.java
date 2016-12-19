@@ -13,8 +13,8 @@ public abstract class Command {
     protected String stateName;
     protected String link;
 
-    public void setLinkTo(Command linkTo) {
-        this.link = linkTo.stateName;
+    public final void setLinkTo(Command linkTo) {
+        setLink(linkTo.stateName);
     }
 
     public void setLink(String link) {

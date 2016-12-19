@@ -10,27 +10,18 @@ import java.util.Map;
  */
 public class FunctionCall extends LineableCommand {
     private int definitionPointer;
-    private char returnAbbrevation;
 
-    private static String returnAbbrevationAlphabet = "_";
-    private static char freeAbbrevation = 'a';
-    public static Map<Character, FunctionCall> decoder = new HashMap<>();
-
-    public static String getReturnAbbrevationAlphabet() {
-        return returnAbbrevationAlphabet;
-    }
+    public static Map<String, Command> decoder = new HashMap<>();
 
     public FunctionCall(int definitionPointer, int callPointer) {
         super(callPointer);
         this.definitionPointer = definitionPointer;
-        returnAbbrevation = freeAbbrevation++;
-        returnAbbrevationAlphabet += returnAbbrevation;
-        decoder.put(returnAbbrevation, this);
+        decoder.put(stateName, this);
     }
 
     @Override
     public List<String> genPreCode() {
         return Collections.singletonList(String
-                .format("%s * _ -> line%d * ^ %c >", stateName, definitionPointer, returnAbbrevation));
+                .format("%s * _ -> line%d * ^ %s >", stateName, definitionPointer, stateName));
     }
 }

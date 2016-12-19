@@ -14,7 +14,8 @@ public final class Util {
     }
 
     public static List<String> getLines(String sourcePath) throws IOException {
-        return Files.readAllLines(new File(sourcePath).toPath());
+        File file = new File(sourcePath);
+        return Files.readAllLines(file.toPath());
     }
 
 //    public static String ntimes(String s, int n) {

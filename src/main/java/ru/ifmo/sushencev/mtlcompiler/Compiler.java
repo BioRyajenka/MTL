@@ -2,12 +2,12 @@ package ru.ifmo.sushencev.mtlcompiler;
 
 import com.google.common.base.Joiner;
 import ru.ifmo.sushencev.mtlcompiler.commands.*;
+import ru.ifmo.sushencev.mtlcompiler.commands.MoveCursor.Direction;
 
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.text.ParseException;
 import java.util.*;
-import java.util.regex.Pattern;
 
 /**
  * Created by Jackson on 17.12.2016.
@@ -18,13 +18,30 @@ public final class Compiler {
     }
 
     public static void main(String[] args) throws IOException, ParseException {
-        Compiler compiler = new Compiler();
-        if (args.length != 2) {
+        //Compiler compiler = new Compiler();
+        /*if (args.length != 2) {
             System.out.println("Usage: MTLCompiler sourcePath resultPath");
             return;
         }
-        compiler.compile(args[0], args[1]);
+        compiler.compile(args[0], args[1]);*/
+        //compiler.compile("M.mtl", "M.out");
+        List<String> lines = Util.getLines("M.out");
+        try (PrintWriter writer = new PrintWriter("M.obf")) {
+            for (String line : lines) {
+                String ss[] = line.split(" ");
+                for (String s : ss) {
+                    if (s.startsWith("line")) {
+                        if (!obf.containsKey(s)) obf.put(s, "" + (freeObf++));
+                        line = line.replaceAll(s, obf.get(s));
+                    }
+                }
+                writer.println(line);
+            }
+        }
     }
+
+    private static int freeObf = 0;
+    private static Map<String, String> obf = new HashMap<>();
 
     private String alphabet;
     private LinesBuffer lines;
@@ -40,7 +57,9 @@ public final class Compiler {
         if (!ss[1].contains("_")) throw new ParseException("Alphabet should contain blank character", 0);
         alphabet = ss[1];
 
-        LinkedList<Command> allCommands = new LinkedList<>();
+        LinkedList<ThirdTapeAdapter> allCommands = new LinkedList<>();
+
+        forwardFunctions();
 
         while (!lines.isEmpty()) {
             String line = lines.get();
@@ -50,21 +69,36 @@ public final class Compiler {
                 throw new ParseException("", 0);
             }
         }
-        allCommands.add(ReturnInCallStack.getInstance());
+        allCommands.add(new ThirdTapeAdapter(Return.getAutoReturn(), false));
 
         try (PrintWriter writer = new PrintWriter(resultPath)) {
             int entryPoint = functionConformity.get("main");
-            //writer.printf("start: \naccept: AC\nreject: RJ\nblank: _\n", entryPoint);
-            writer.printf("2\n");
-            preCodeToCode(String.format("S * _ -> line%d * ^ _ ^", entryPoint)).forEach(writer::println);
+            writer.printf("3\n");
+            preCodeToCode(String.format("S * _ _ -> line%d * ^ _ ^ _ ^", entryPoint)).forEach(writer::println);
             allCommands.forEach(c -> c.genPreCode()
-                    .forEach(s -> preCodeToCode(s).forEach(x -> writer.println(x))));// + " (from " + s + ")"))));
+                    .forEach(s -> preCodeToCode(s) // + "(from " + c.getCommand().getClass().getSimpleName() + ")"
+                            .forEach(x -> writer.println(x))));// + " (from " + s + ")"))));
         }
+    }
+
+    private void forwardFunctions() {
+        while (!lines.isEmpty()) {
+            String line = lines.get();
+            if (line.startsWith("def")) {
+                int fp = lines.line(); // pointer to the first command
+                String name = line.split(" ")[1];
+                functionConformity.put(name, fp);
+            }
+        }
+        lines.reset();
+        lines.get();
     }
 
     private List<String> preCodeToCode(String s) {
         List<String> res = new LinkedList<>();
-        preCodeToCode1(s, 0).forEach(line -> res.addAll(preCodeToCode1(line, 1)));
+        //preCodeToCode1(s, 0).forEach(line -> res.addAll(preCodeToCode1(line, 1)));
+        preCodeToCode1(s, 0).forEach(s1 -> preCodeToCode1(s1, 1)
+                .forEach(s2 -> res.addAll(preCodeToCode1(s2, 2))));
         return res;
     }
 
@@ -81,13 +115,8 @@ public final class Compiler {
             Character cc = null;
             if (from.startsWith("!")) cc = from.substring(1).charAt(0);
             if (to.startsWith("!")) cc = to.substring(1).charAt(0);
-            String alphabet;
-            if (m == 0) {
-                alphabet = this.alphabet;
-            } else {
-                alphabet = FunctionCall.getReturnAbbrevationAlphabet();
-            }
-            for (char c : alphabet.toCharArray()) {
+
+            for (char c : getAlphabet(m)) {
                 if (cc == null || cc != c) {
                     res.add(replace(s, "" + c, "" + c, m));
                 }
@@ -108,13 +137,8 @@ public final class Compiler {
         String cur = m2 == 0 ? from : to;
         if (!cur.startsWith("!") && !cur.equals("*")) return Collections.singletonList(s);
 
-        String alphabet;
-        if (m == 0) {
-            alphabet = this.alphabet;
-        } else {
-            alphabet = FunctionCall.getReturnAbbrevationAlphabet();
-        }
-        for (char c : alphabet.toCharArray()) {
+        System.out.println(s);
+        for (char c : getAlphabet(m)) {
             if (cur.equals("*") || cur.substring(1).charAt(0) != c) {
                 String news = m2 == 0 ? replace(s, "" + c, to, m) : replace(s, from, "" + c, m);
                 res.add(news);
@@ -123,44 +147,46 @@ public final class Compiler {
         return res;
     }
 
-    private String[] parseFromTo(String s, int m) {
-        String ss[] = s.split(" ");
-        String from;
-        String to;
-        if (m == 0) {
-            from = ss[1];
-            to = ss[5];
+    private char[] getAlphabet(int m) {
+        String alphabet;
+        if (m == 0 || m == 2) {
+            alphabet = this.alphabet;
         } else {
-            from = ss[2];
-            to = ss[7];
+            throw new RuntimeException("Trying to get stack tape alphabet!");
+            //alphabet = FunctionCall.getReturnAbbrevationAlphabet();
         }
+        return alphabet.toCharArray();
+    }
+
+    private String[] parseFromTo(String s, int m) {
+        final int MAXM = 3;
+        String ss[] = s.split(" ");
+        //%s * * * -> %s * ^ * ^ * ^
+        String from = ss[m + 1];
+        String to = ss[MAXM + 3 + m * 2];
         return new String[]{from, to};
     }
 
     private String replace(String s, String from, String to, int m) {
+        //System.out.println("BEFORE " + s);
         String ss[] = s.split(" ");
-        if (m == 0) {
-            ss[1] = from;
-            ss[5] = to;
-        } else {
-            ss[2] = from;
-            ss[7] = to;
-        }
-        return Joiner.on(" ").join(ss);
+        ss[m + 1] = from;
+        ss[6 + m * 2] = to;
+        String res = Joiner.on(" ").join(ss);
+        //System.out.println("AFTER " + s);
+        return res;
     }
 
-    private LinkedList<Command> parseFunction(String header) throws ParseException {
+    private LinkedList<ThirdTapeAdapter> parseFunction(String header) throws ParseException {
         String ss[] = header.split(" ");
         if (ss.length != 2 || ss[1].trim().isEmpty()) throw new ParseException("", 0);
         String name = ss[1];
-        int fp = lines.line(); // pointer to the first command
-        functionConformity.put(name, fp);
 
-        LinkedList<Command> commands = readCommands(1, null);
+        LinkedList<ThirdTapeAdapter> commands = readCommands(1, null);
         if (name.equals("main")) {
             commands.getLast().setLink("AC");
         } else {
-            commands.getLast().setLinkTo(ReturnInCallStack.getInstance());
+            commands.getLast().setLinkTo(Return.getAutoReturn());
         }
         return commands;
     }
@@ -173,7 +199,7 @@ public final class Compiler {
     }
 
 
-    private Command parseCommand(int depth, Cycle cyclePointer) throws ParseException {
+    private ThirdTapeAdapter parseCommand(int depth, Cycle cyclePointer) throws ParseException {
         int commandPointer = lines.line();
         String line = lines.get();
         if (depth(line) != depth) throw new ParseException("", 0);
@@ -181,54 +207,84 @@ public final class Compiler {
 
         if (line.equals("cycle")) {
             Cycle cycle = new Cycle(commandPointer);
-            List<Command> subCommands = readCommands(depth + 1, cycle);
+            List<ThirdTapeAdapter> subCommands = readCommands(depth + 1, cycle);
             subCommands.forEach(cycle::appendSubSequence);
-            return cycle;
+            return new ThirdTapeAdapter(cycle, false);
         }
-
-        if (line.startsWith("ifchar")) {
+        if (line.startsWith("ifchar ") || line.startsWith("ifchar1 ")) {
             String ss[] = line.split(" ");
             if (ss.length != 2 || ss[1].trim().length() != 1) throw new ParseException("", 0);
             char c = ss[1].trim().charAt(0);
-            //int thenPointer = lines.line();
-            LinkedList<Command> thenSequence = readCommands(depth + 1, cyclePointer);
-            IfChar ifChar;
+            boolean onBuffer = ss[0].endsWith("1");
+            LinkedList<ThirdTapeAdapter> thenSequence = readCommands(depth + 1, cyclePointer);
+            LinkedList<ThirdTapeAdapter> elseSequence = null;
             if (lines.peek().trim().equals("else") && depth(lines.peek()) == depth) {
                 lines.get();
-                LinkedList<Command> elseSequence = readCommands(depth + 1, cyclePointer);
-                ifChar = new IfChar(commandPointer, c, thenSequence, elseSequence);
-            } else {
-                ifChar = new IfChar(commandPointer, c, thenSequence, null);
+                elseSequence = readCommands(depth + 1, cyclePointer);
             }
-            return ifChar;
+            return new ThirdTapeAdapter(new IfChar(commandPointer, c, thenSequence, elseSequence), onBuffer);
         }
-        if (line.equals("_r")) {
-            return new MoveCursor(commandPointer, MoveCursor.Direction.RIGHT);
+        if (line.startsWith("if ")) {
+            String ss[] = line.split(" ");
+            if (ss.length != 2) throw new ParseException("", 0);
+            String functionName = ss[1];
+            int functionPointer = functionConformity.get(functionName);
+            LinkedList<ThirdTapeAdapter> thenSequence = readCommands(depth + 1, cyclePointer);
+            LinkedList<ThirdTapeAdapter> elseSequence = null;
+            if (lines.peek().trim().equals("else") && depth(lines.peek()) == depth) {
+                lines.get();
+                elseSequence = readCommands(depth + 1, cyclePointer);
+            }
+            return new ThirdTapeAdapter(new If(commandPointer, functionPointer, thenSequence, elseSequence), false);
         }
-        if (line.equals("_l")) {
-            return new MoveCursor(commandPointer, MoveCursor.Direction.LEFT);
+        if (line.matches(">+1?") || line.matches("<+1?")) {
+            boolean onBuffer = line.endsWith("1");
+            Direction dir = line.startsWith("<") ? Direction.LEFT : Direction.RIGHT;
+            int times = onBuffer ? line.length() - 1 : line.length();
+            return new ThirdTapeAdapter(new MoveCursor(commandPointer, dir, times), onBuffer);
         }
-        if (line.startsWith("_w")) {
+        if (line.startsWith("setchar ") || line.startsWith("setchar1 ")) {
             String ss[] = line.split(" ");
             if (ss.length != 2 || ss[1].trim().length() != 1) throw new ParseException("", 0);
-            return new Write(commandPointer, ss[1].charAt(0));
+            boolean onBuffer = ss[0].endsWith("1");
+            return new ThirdTapeAdapter(new Write(commandPointer, ss[1].charAt(0)), onBuffer);
         }
-        if (line.equals("return")) {
-            return new Return(commandPointer);
+        if (line.startsWith("return ") || line.equals("return")) {
+            char c = '_';
+            if (!line.equals("return")) {
+                String ss[] = line.split(" ");
+                if (ss.length != 2 || ss[1].trim().length() != 1) throw new ParseException(line, 0);
+                c = ss[1].charAt(0);
+            }
+            return new ThirdTapeAdapter(new Return(commandPointer, c), false);
         }
         if (line.equals("continue")) {
-            return new Continue(commandPointer, cyclePointer);
+            return new ThirdTapeAdapter(new Continue(commandPointer, cyclePointer), false);
+        }
+        if (line.equals("break")) {
+            return new ThirdTapeAdapter(new Break(commandPointer, cyclePointer), false);
+        }
+        if (line.endsWith(":")) {
+            if (line.contains(" ") || line.contains("\t")) throw new ParseException("", 0);
+            return new ThirdTapeAdapter(new Label(commandPointer, line
+                    .substring(0, line.length() - 1)), false);
+        }
+        if (line.startsWith("goto ")) {
+            String ss[] = line.split(" ");
+            if (ss.length != 2) throw new ParseException(line, ss[0].length());
+            return new ThirdTapeAdapter(new Goto(commandPointer, ss[1]), false);
         }
         if (functionConformity.containsKey(line)) {
-            return new FunctionCall(functionConformity.get(line), commandPointer);
+            return new ThirdTapeAdapter(
+                    new FunctionCall(functionConformity.get(line), commandPointer), false);
         }
-        throw new ParseException("", 0);
+        throw new ParseException(line, 0);
     }
 
-    private LinkedList<Command> readCommands(int depth, Cycle cyclePointer) throws ParseException {
-        LinkedList<Command> res = new LinkedList<>();
+    private LinkedList<ThirdTapeAdapter> readCommands(int depth, Cycle cyclePointer) throws ParseException {
+        LinkedList<ThirdTapeAdapter> res = new LinkedList<>();
         do {
-            Command command = parseCommand(depth, cyclePointer);
+            ThirdTapeAdapter command = parseCommand(depth, cyclePointer);
             if (!res.isEmpty()) res.getLast().setLinkTo(command);
             res.add(command);
         } while (!lines.isEmpty() && depth(lines.peek()) == depth);

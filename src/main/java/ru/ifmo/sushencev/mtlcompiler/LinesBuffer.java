@@ -11,8 +11,7 @@ public class LinesBuffer {
 
     public LinesBuffer(List<String> lines) {
         this.lines = lines;
-        pointer = 0;
-        skip();
+        reset();
     }
 
     public String get() {
@@ -42,5 +41,10 @@ public class LinesBuffer {
 
     public boolean isEmpty() {
         return pointer == lines.size();
+    }
+
+    public void reset() {
+        pointer = 0;
+        skip();
     }
 }

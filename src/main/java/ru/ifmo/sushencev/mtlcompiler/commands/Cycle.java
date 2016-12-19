@@ -26,11 +26,6 @@ public class Cycle extends LineableCommand {
     }
 
     @Override
-    public void setLinkTo(Command linkTo) {
-        //throw new RuntimeException("You should implement break in order to set link from the cycle");
-    }
-
-    @Override
     public List<String> genPreCode() {
         List<String> res = new LinkedList<>();
         res.add(String.format("%s * _ -> %s * ^ _ ^", stateName, subCommands.getFirst().stateName));

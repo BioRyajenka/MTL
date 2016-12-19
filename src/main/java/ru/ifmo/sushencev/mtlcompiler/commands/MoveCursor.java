@@ -13,8 +13,9 @@ public class MoveCursor extends LineableCommand {
 
     private Direction direction;
 
-    public MoveCursor(int line, Direction direction) {
+    public MoveCursor(int line, Direction direction, int times) {
         super(line);
+        if (times != 1) throw new RuntimeException("move cursor times should be equals to 1");
         this.direction = direction;
     }
 
