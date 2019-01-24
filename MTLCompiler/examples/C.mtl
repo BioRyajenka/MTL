@@ -1,0 +1,60 @@
+def toleft
+	cycle
+		ifchar _
+			break
+		<
+
+def toright
+	cycle
+		ifchar _
+			break
+		>
+
+def main
+	toright
+	setchar $
+	toleft
+	>
+
+	// мы в начале
+	cycle
+		ifchar $
+			break
+		ifchar 0
+			setchar x
+			toright
+			setchar 1
+			cycle
+				ifchar x
+					break
+				<
+			setchar 0
+		ifchar 1
+			setchar x
+			toright
+			setchar 0
+			cycle
+				ifchar x
+					break
+				<
+			setchar 1
+		>
+
+	// мы на символе $. в середине
+	cycle
+		ifchar _
+			break
+		>
+		ifchar 0
+			<
+			setchar 0
+		ifchar 1
+			<
+			setchar 1
+		>
+
+	<
+	setchar _
+	<
+	toleft
+	>

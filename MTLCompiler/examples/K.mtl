@@ -1,0 +1,63 @@
+#alphabet 01ao()_
+
+def skip_to_close_bracket
+	cycle
+		ifchar (
+			_r
+			skip_to_close_bracket
+			_r
+			continue
+		ifchar )
+			return
+		ifchar _
+			return
+		_r
+		
+// assuming strings is (abc) this function starts on 'a' and rewriting ')' with the result
+def calc
+	cycle
+		ifchar (
+			_r
+			calc
+		_r
+		
+		ifchar _
+			_l
+			return
+		
+		ifchar )
+			_l
+			ifchar 1
+				_r
+				_w 1
+			else
+				_r
+				_w 0
+			return
+		
+		ifchar o
+			_l
+			ifchar 1
+				skip_to_close_bracket
+				_w 1
+				return
+			else
+				_r
+				_r
+				continue
+
+		// a
+		_l
+		ifchar 0
+			_r // после этой команды указывает на a
+			_r
+			ifchar (
+				_r
+				calc
+			_w 0
+		else
+			_r
+			_r
+			
+def main
+	calc

@@ -1,0 +1,216 @@
+#alphabet 01_|
+
+def _gotoBeginOnBothTapes
+	gotoNumberBegin
+	cycle
+		ifchar1 _
+			>1
+			return
+		<1
+
+def _lengthsAreEquals
+	cycle
+		ifchar1 _
+			<1
+			ifchar _
+				<
+				_gotoBeginOnBothTapes
+				return 1
+			ifchar |
+				<
+				_gotoBeginOnBothTapes
+				return 1
+			_gotoBeginOnBothTapes
+			return 0
+		ifchar _
+			<
+			_gotoBeginOnBothTapes
+			return 0
+		ifchar |
+			<
+			_gotoBeginOnBothTapes
+			return 0
+		>
+		>1
+
+def _firstLengthIsLess
+	cycle
+		ifchar _
+			<
+			ifchar1 _
+				<1
+				_gotoBeginOnBothTapes
+				return 0
+			_gotoBeginOnBothTapes
+			return 1
+		ifchar |
+			<
+			ifchar1 _
+				<1
+				_gotoBeginOnBothTapes
+				return 0
+			_gotoBeginOnBothTapes
+			return 1
+		ifchar1 _
+			<1
+			_gotoBeginOnBothTapes
+			return 0
+		>
+		>1
+
+def clearBuffer
+	cycle
+		ifchar1 _
+			break
+		>1
+	<1
+	
+	cycle
+		ifchar1 _
+			break
+		setchar1 _
+		<1
+
+def lessThanPrevious
+	<
+	<
+	copyNumberToBufferBackwards
+	>
+	>1
+	gotoNext
+	
+	// осталось проверить, что число на ленте 1 меньше, чем число на ленте 3
+	if _lengthsAreEquals
+		cycle
+			ifchar1 _
+				<
+				setchar1 0
+				break
+			ifchar 1
+				ifchar1 0
+					break
+			else
+				ifchar1 1
+					break
+			>
+			>1
+		gotoNumberBegin
+		ifchar1 0
+			clearBuffer
+			return 0
+		else
+			clearBuffer
+			return 1
+	else
+		if _firstLengthIsLess
+			clearBuffer
+			return 1
+		else
+			clearBuffer
+			return 0
+
+def copyNumberToBufferBackwards
+	cycle
+		ifchar |
+			break
+		ifchar _
+			break
+		ifchar 0
+			setchar1 0
+		ifchar 1
+			setchar1 1
+		<
+		<1
+		
+def copyNumberFromBuffer
+	cycle
+		ifchar1 |
+			break
+		ifchar1 _
+			break
+		ifchar1 1
+			setchar 1
+		else
+			setchar 0
+		>1
+		>
+
+def swapWithPrevious
+	<
+	<
+	
+	copyNumberToBufferBackwards
+	setchar1 |
+	<1
+	>
+	
+	gotoNext
+	gotoNext
+	<
+	<
+	
+	copyNumberToBufferBackwards
+	>1
+	<
+	gotoNumberBegin
+	
+	copyNumberFromBuffer
+	setchar |
+	>
+	>1
+	copyNumberFromBuffer
+	<1
+	clearBuffer
+	
+	<
+	gotoNumberBegin
+
+def gotoFirst
+	cycle
+		ifchar _
+			break
+		<
+	>
+
+def gotoNext
+	cycle
+		ifchar |
+			break
+		ifchar _
+			break
+		>
+	>
+	
+def gotoNumberBegin
+	cycle
+		ifchar |
+			break
+		ifchar _
+			break
+		<
+	>
+
+def hasNext
+	cycle
+		ifchar |
+			<
+			gotoNumberBegin
+			return 1
+		ifchar _
+			<
+			gotoNumberBegin
+			return 0
+		>
+
+def main
+	label:
+	gotoFirst
+	cycle
+		if hasNext
+			gotoNext
+			if lessThanPrevious
+				swapWithPrevious
+				goto label
+		else
+			break
+	gotoFirst

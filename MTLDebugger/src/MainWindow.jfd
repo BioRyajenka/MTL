@@ -1,0 +1,80 @@
+JFDML JFormDesigner: "5.2.5.0.333" Java: "1.8.0_102" encoding: "UTF-8"
+
+new FormModel {
+	contentType: "form/swing"
+	root: new FormRoot {
+		add( new FormWindow( "javax.swing.JFrame", new FormLayoutManager( class org.jdesktop.layout.GroupLayout ) {
+			"$horizontalGroup": "par l {seq {space :::p, par l {comp tape1::l:::x, seq t {comp stateLabel:::p::p, space ::52:x, comp mtlLineLabel:::p::p, space :p:69:p, comp resetButton:::p:154:p, space :::p, comp prevButton:::p:154:p, space :::p, comp nextButton:::p:154:p}, comp tape2:::::x, comp tape3::l::708:x, seq t {space :0:0:x, comp runButton:::p:154:p, space :::p, comp gotoLineButton:::p:154:p, space :::p, comp textField1:::p:79:p}}, space :::p}}"
+			"$verticalGroup": "par l {seq l {space :::p, par l {par b {comp nextButton::b:p::p, comp prevButton::b:p::p, comp resetButton::b:p::p}, par b:l {comp stateLabel::b:p::p, comp mtlLineLabel::b:p::p}}, space :::p, comp tape1:::p:52:p, space :::p, comp tape2:::p:52:p, space :::p, comp tape3:::p:52:p, space :::p, par b {comp gotoLineButton::b:p::p, comp textField1::b:p::p, comp runButton::b:p::p}, space :::x}}"
+		} ) {
+			name: "this"
+			add( new FormComponent( "javax.swing.JTable" ) {
+				name: "tape1"
+				auxiliary() {
+					"JavaCodeGenerator.customCreate": true
+				}
+			} )
+			add( new FormComponent( "javax.swing.JTable" ) {
+				name: "tape2"
+				auxiliary() {
+					"JavaCodeGenerator.customCreate": true
+				}
+			} )
+			add( new FormComponent( "javax.swing.JTable" ) {
+				name: "tape3"
+				auxiliary() {
+					"JavaCodeGenerator.customCreate": true
+				}
+			} )
+			add( new FormComponent( "javax.swing.JButton" ) {
+				name: "nextButton"
+				"text": "Next"
+				auxiliary() {
+					"JavaCodeGenerator.customCreate": true
+				}
+			} )
+			add( new FormComponent( "javax.swing.JButton" ) {
+				name: "prevButton"
+				"text": "Prev"
+				auxiliary() {
+					"JavaCodeGenerator.customCreate": true
+				}
+			} )
+			add( new FormComponent( "javax.swing.JLabel" ) {
+				name: "stateLabel"
+				"text": "State: S"
+			} )
+			add( new FormComponent( "javax.swing.JButton" ) {
+				name: "resetButton"
+				"text": "Reset"
+				auxiliary() {
+					"JavaCodeGenerator.customCreate": true
+				}
+			} )
+			add( new FormComponent( "javax.swing.JLabel" ) {
+				name: "mtlLineLabel"
+				"text": "mtlLine: 0"
+			} )
+			add( new FormComponent( "javax.swing.JTextField" ) {
+				name: "textField1"
+			} )
+			add( new FormComponent( "javax.swing.JButton" ) {
+				name: "gotoLineButton"
+				"text": "jump to line"
+				auxiliary() {
+					"JavaCodeGenerator.customCreate": true
+				}
+			} )
+			add( new FormComponent( "javax.swing.JButton" ) {
+				name: "runButton"
+				"text": "run"
+				auxiliary() {
+					"JavaCodeGenerator.customCreate": true
+				}
+			} )
+		}, new FormLayoutConstraints( null ) {
+			"location": new java.awt.Point( 0, 0 )
+			"size": new java.awt.Dimension( 740, 315 )
+		} )
+	}
+}
